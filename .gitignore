@@ -1,0 +1,10 @@
+# ignore all .DS_Store files everywhere
+.DS_Store
+exports/.DS_Store
+imports/.DS_Store
+working_files/.DS_Store
+working_files/archived/.DS_Store
+
+developer_archive/
+__pycache__/
+capital_gains.csv/

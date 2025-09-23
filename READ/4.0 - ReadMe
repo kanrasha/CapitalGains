@@ -1,0 +1,459 @@
+0. USER INFORMATION
+
+This is designed first and foremost for crypto trading, but can work perfectly fine for any same-asset.  That is one
+catch in this version - it only works for one asset at a time (for now).  It also is easily ported into a Terminal cmd
+with the addition of an alias to the program directory or by running Terminal within the program directory.  Then
+simply type:
+
+$ CapGains4_0 --method ["fifo", "lifo", "hifo"]  # defaults to fifo if no method is named
+
+The calculation will return in the Terminal and the exported capital gains file will be in /exports.
+
+This does not aim to work as a complete, complex tax-compliant software, but rather a personal calculator and form
+generator for those who know what they are doing.  Proper input with the FIFO method will produce documents compatible
+with standard methods, but I cannot guarantee compliance - that is up to the user.  As of 2024 in the USA, FIFO method
+in this program will produce a list of sales with associated dates and proceeds/cost basis that is tax compliant.  The
+user must keep their own records.  Lots of official links and information is provided under the "US TAX LAW" doc in the
+READ directory.
+
+As of now, the HIFO and LIFO methods only provide calculations, but do not provide the required specific ID
+(date, qty, cost) for each sale as is required on the IRS form 8949 when using these methods.  On Form 8949 you mark
+Box 3 “Specific identification” (not “LIFO” or “HIFO”).
+
+Something I need to check on: does HIFO calculate strictly by highest cost basis, or can it be by highest "price"?
+Because a larger sale at a lower price might result in higher taxes when the goal is to sell the most expensive
+purchases first.
+
+Many more updates to come.  Enjoy the use of this as a trading and tax estimation tool.
+
+
+1. DESIGN GOALS
+
+Implement specific ID for HIFO and LIFO
+Never overwrite /imports/transactions.csv
+Original import gets copied to /working_files before the other processes run, then verified against before deleting.
+Always work on copies in /working_files/…
+Add CostBasis (Price * Qty) and make new file
+Auto-detect date format and sort ascending (fast)
+Export two ready-to-use copies:
+• transactions_hifo.csv (same order)
+• transactions_fifo_lifo.csv (date-ordered)
+Optional quarantine + SHA-256 verification
+Bypass if an import has already succeeded on the same file
+Prompt user when a duplicate basename exists
+Work with optional Notes column (ignored but preserved)
+Prompt user if import file is missing
+
+
+2. FILE / FOLDER CONSTANTS
+
+from pathlib import Path
+
+ROOT            = Path(__file__).parent
+IMPORT_DIR      = ROOT / "imports"
+WORKING_DIR     = ROOT / "working_files"
+ARCHIVE_DIR     = WORKING_DIR / "archived"
+TRANSACTION_CSV = IMPORT_DIR / "transactions.csv"
+
+# Output files
+HIFO_CSV        = WORKING_DIR / "transactions_hifo.csv"
+FIFO_LIFO_CSV   = WORKING_DIR / "transactions_fifo_lifo.csv"
+
+
+
+3. FAST DATE PARSING MACRO
+
+from datetime import datetime
+import re
+
+DATE_RE = re.compile(r"(\d{4})[-/]?(\d{1,2})[-/]?(\d{1,2})")
+
+def safe_date(date_str: str) -> datetime:
+    """Return datetime from yyyy-mm-dd, yyyy/mm/dd, mm/dd/yyyy, etc."""
+    m = DATE_RE.match(date_str.strip())
+    if not m:
+        raise ValueError(f"Unrecognized date: {date_str}")
+    y, mon, d = map(int, m.groups())
+    # Heuristic: if year < 100 treat as 20yy
+    if y < 100:
+        y += 2000
+    return datetime(y, mon, d)
+
+
+
+4. IMPORT-AND-PREPARE FUNCTION
+
+import csv, shutil, hashlib, os
+from typing import List, Dict, Tuple
+
+_IMPORT_DONE: Dict[str, bool] = {}   # cache for bypass
+
+def import_transactions() -> Tuple[bool, Path, Path]:
+    """
+    Return (success, hifo_path, fifo_lifo_path)
+    """
+    src = TRANSACTION_CSV.resolve()
+    key = str(src)
+
+    # 1.  Bypass if already succeeded on this exact file
+    if _IMPORT_DONE.get(key, False):
+        print("✅  Import already completed – skipping.")
+        return True, HIFO_CSV, FIFO_LIFO_CSV
+
+    # 2.  Duplicate-basename check / prompt
+    basename = src.name
+    if (WORKING_DIR / basename).exists():
+        print(f"⚠️  File {basename} already exists in /working_files.")
+        choice = input("Archive existing copy and proceed? [y/N]: ").strip().lower()
+        if choice != "y":
+            print("Aborted.")
+            return False, Path(), Path()
+        archive_old()
+
+    # 3.  Load entire CSV into memory (quarantine)
+    with src.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    if not rows:
+        print("Empty CSV – nothing to do.")
+        return True, HIFO_CSV, FIFO_LIFO_CSV
+
+    # 4.  Add CostBasis column if missing
+    for row in rows:
+        row.setdefault("CostBasis", float(row["PricePerUnit"]) * float(row["Qty"]))
+        row.setdefault("Notes", "")
+
+    # 5.  Fast sort by date (O(n log n))
+    rows.sort(key=lambda r: safe_date(r["Date"]))
+
+    # 6.  Write two copies
+    fields = ["Date", "Action", "Qty", "PricePerUnit", "CostBasis", "Notes"]
+    with HIFO_CSV.open("w", newline="", encoding="utf-8") as h:
+        w = csv.DictWriter(h, fieldnames=fields)
+        w.writeheader()
+        w.writerows(rows)
+
+    with FIFO_LIFO_CSV.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fields)
+        w.writeheader()
+        w.writerows(rows)
+
+    # 7.  Quarantine check – compare SHA-256
+    if verify_files(src, HIFO_CSV):
+        _IMPORT_DONE[key] = True
+        print("✅  Import finished and verified.")
+        return True, HIFO_CSV, FIFO_LIFO_CSV
+    else:
+        print("❌  Verification failed.")
+        return False, Path(), Path()
+
+def archive_old():
+    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    today = datetime.today().strftime("%Y-%m-%d")
+    for p in WORKING_DIR.glob("transactions*.csv"):
+        if p.is_file():
+            new_name = p.with_name(f"{p.stem}_{today}{p.suffix}")
+            shutil.move(str(p), str(ARCHIVE_DIR / new_name))
+
+def verify_files(src: Path, dst: Path) -> bool:
+    """Return True if SHA256 of src == dst (quick binary check)."""
+    def sha256(p):
+        h = hashlib.sha256()
+        with p.open("rb") as f:
+            for chunk in iter(lambda: f.read(1 << 15), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    return sha256(src) == sha256(dst)
+
+
+
+5. QUARANTINE BYPASS FLAG
+The global _IMPORT_DONE dictionary lets downstream code know:
+
+success, hifo, fifolifo = import_transactions()
+if success:
+    # proceed to FIFO/LIFO calculation
+    ...
+
+
+
+6. COINBASE FUTURE-PROOFING (stub)
+If the Coinbase export has extra columns, just extend the fields list:
+
+fields = ["Date", "Action", "Qty", "PricePerUnit", "CostBasis", "Notes"]  # add more
+
+
+
+7. EMPTY IRS F-8949 TEMPLATE
+
+def create_empty_f8949():
+    f8949_fields = [
+        "Description", "DateAcquired", "DateSold", "Proceeds", "CostBasis",
+        "GainLoss", "Adjustment"
+    ]
+    with open(ROOT / "exports" / "IRS_f8949.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(f8949_fields)
+
+
+
+8. ENTRY POINT
+
+if __name__ == "__main__":
+    ok, hifo_path, fifo_path = import_transactions()
+    if ok:
+        create_empty_f8949()
+        print(f"Ready to consume:\n  HIFO: {hifo_path}\n  FIFO/LIFO: {fifo_path}")
+
+
+
+9. FULL CODE BELOW
+First working copy for safety reference.  This is pre-4.0, which will be the LAST working copy before 4.0.1
+
+import csv, hashlib, shutil
+from datetime import datetime
+from pathlib import Path
+import re
+import os
+
+# ------------------------------------------------------------------
+# Paths
+# ------------------------------------------------------------------
+ROOT                = Path(__file__).parent
+IMPORT_DIR          = ROOT / "imports"
+WORKING_DIR         = ROOT / "working_files"
+ARCHIVE_DIR         = WORKING_DIR / "archived"
+TRANSACTION_CSV     = IMPORT_DIR / "transactions.csv"
+
+HIFO_CSV            = WORKING_DIR / "transactions_hifo.csv"
+FIFO_LIFO_CSV       = WORKING_DIR / "transactions_fifo_lifo.csv"
+IRS_F8949_CSV       = ROOT / "exports" / "IRS_f8949.csv"
+
+# ------------------------------------------------------------------
+# CONSTANTS
+# ------------------------------------------------------------------
+SUFFIX_FMT = "%Y-%m-%d_%H-%M-%S"
+_ORIGINAL_BACKUP: Path = None    # keeps path of the untouched copy
+
+# ------------------------------------------------------------------
+# Globals
+# ------------------------------------------------------------------
+_IMPORT_DONE: dict  = {}
+
+# ------------------------------------------------------------------
+# Utilities
+# ------------------------------------------------------------------
+DATE_RE = re.compile(r"(\d{4})[-/]?(\d{1,2})[-/]?(\d{1,2})")
+
+def safe_date(date_str: str) -> datetime:
+    m = DATE_RE.match(date_str.strip())
+    if not m:
+        raise ValueError(f"Unrecognized date: {date_str}")
+    y, mon, d = map(int, m.groups())
+    if y < 100:
+        y += 2000
+    return datetime(y, mon, d)
+# This does pose a Y1K and Y3K risk, for what it's worth.  Data from the 1990s into 2000s will flip 1990s to 2090s.
+
+def archive_old():
+    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    today = datetime.today().strftime("%Y-%m-%d")
+    for p in WORKING_DIR.glob("transactions*.csv"):
+        if p.is_file():
+            new_name = p.with_name(f"{p.stem}_{today}{p.suffix}")
+            shutil.move(str(p), str(ARCHIVE_DIR / new_name))
+
+# # Version 1, original, no associated blocks
+def verify_files(src: Path, dst: Path) -> bool:
+    def sha256(p):
+        h = hashlib.sha256()
+        with p.open("rb") as f:
+            for chunk in iter(lambda: f.read(1 << 15), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    return sha256(src) == sha256(dst)
+
+# # Version 2, works with block on line 168-173
+# def file_hash(p: Path) -> str:
+#     h = hashlib.sha256()
+#     with p.open("rb") as f:
+#         for chunk in iter(lambda: f.read(8192), b""):
+#             h.update(chunk)
+#     return h.hexdigest()
+
+# Version 3, verification without SHA256
+def is_modified_since(src: Path, backup: Path) -> bool:
+    return os.path.getmtime(src) != os.path.getmtime(backup)
+
+# ------------------------------------------------------------------
+# Main importer
+# ------------------------------------------------------------------
+def import_transactions():
+
+    if not TRANSACTION_CSV.exists():
+        raise SystemExit(
+            f"Missing required file: {TRANSACTION_CSV}\n"
+            f"Please place 'transactions.csv' in {IMPORT_DIR.absolute()}"
+        )
+
+    global _ORIGINAL_BACKUP
+    src = TRANSACTION_CSV.resolve()
+    key = str(src)
+
+    # bypass if already done
+    if _IMPORT_DONE.get(key, False):
+        print("✅ Import already completed – skipping.")
+        return True, HIFO_CSV, FIFO_LIFO_CSV
+
+    if not src.exists():
+        raise FileNotFoundError(f"{src} not found")
+    # this got added later... could remove?
+
+    # prompt for duplicate basename
+    basename = src.name
+    if (WORKING_DIR / basename).exists():
+        print(f"⚠️ File {basename} already exists in /working_files.")
+        choice = input("Archive existing and proceed? [y/N]: ").strip().lower()
+        if choice != "y":
+            print("Aborted.")
+            return False, None, None
+        archive_old()
+
+    # ---- 1. QUARANTINE COPY BEFORE ANY CHANGE ----
+    stamp = datetime.now().strftime(SUFFIX_FMT)
+    _ORIGINAL_BACKUP = WORKING_DIR / f"{src.stem}_{stamp}{src.suffix}"
+    WORKING_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, _ORIGINAL_BACKUP)   # exact byte-for-byte copy
+
+
+    # ---------- Load ----------
+    with src.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        print("Empty CSV – nothing to do.")
+        return True, HIFO_CSV, FIFO_LIFO_CSV  #why does this exist?
+
+    # return True lets downstream code continue without a special-case branch;
+    # callers just check the boolean and use the returned paths.
+    # If you prefer, you can raise an exception instead.
+
+    # ---------- Add CostBasis (missing column) ----------
+    for row in rows:
+        row.setdefault("CostBasis", float(row["PricePerUnit"]) * float(row["Qty"]))
+        # If "CostBasis" is missing (or None), add it with value; otherwise leave the existing value
+        row.setdefault("Notes", "")
+        # Same for "Notes"
+
+        # Necessary only if the CSV may lack those columns.
+        # If you guarantee the columns exist, you can remove these two lines.
+
+    # Sort - Create two views and write
+    fields = ["Date", "Action", "Qty", "PricePerUnit", "CostBasis", "Notes"]
+    date_sorted = sorted(rows, key=lambda r: safe_date(r["Date"]))
+    cost_sorted = sorted(rows, key=lambda r: float(r["CostBasis"]), reverse=True)
+
+    WORKING_DIR.mkdir(parents=True, exist_ok=True)
+
+    # This is old, replaced by the block that follows this one.
+    # with HIFO_CSV.open("w", newline="", encoding="utf-8") as h, \
+    #      FIFO_LIFO_CSV.open("w", newline="", encoding="utf-8") as f:
+    #     for path, writer in [(HIFO_CSV, csv.DictWriter(h, fields)),
+    #                          (FIFO_LIFO_CSV, csv.DictWriter(f, fields))]:
+    #         writer.writeheader()
+    #         writer.writerows(rows)
+
+    # The next 2 lines are the replacement for the above block.
+    with FIFO_LIFO_CSV.open("w", newline="", encoding="utf-8") as f1:
+        writer = csv.DictWriter(f1, fields)
+        writer.writeheader()
+        writer.writerows(date_sorted)
+
+    with HIFO_CSV.open("w", newline="", encoding="utf-8") as f2:
+        writer = csv.DictWriter(f2, fields)
+        writer.writeheader()
+        writer.writerows(cost_sorted)
+
+    # ---------- Verify ----------
+    if verify_files(src, _ORIGINAL_BACKUP):
+        _IMPORT_DONE[key] = True   # Need to learn how this works
+        print("✅ Import finished and verified.")
+        return True, HIFO_CSV, FIFO_LIFO_CSV
+    else:
+        print("❌ Verification failed.")
+        return False, None, None
+
+    # Version 3, uses "last modified" check, instead of SHA256 hash
+    # noinspection PyUnreachableCode
+    if is_modified_since(src, _ORIGINAL_BACKUP):
+        raise RuntimeError(
+                    f"The source file has been altered *after* our copy was made.\n"
+                    f"Nothing was overwritten.  Your untouched backup is:\n"
+                    f"{_ORIGINAL_BACKUP}"
+                )
+
+    # ---- 5. Clean up quarantine copy ----
+        # noinspection PyUnreachableCode
+    _ORIGINAL_BACKUP.unlink(missing_ok=True)
+    _IMPORT_DONE[key] = True
+    return True, HIFO_CSV, FIFO_LIFO_CSV
+
+
+    # # Works with Version 2 verification
+    # block on line 63-68 (look for nearby verification block "def file_hash()")
+    # noinspection PyUnreachableCode
+    if file_hash(src) == file_hash(_ORIGINAL_BACKUP):
+        _ORIGINAL_BACKUP.unlink(missing_ok=True)  # clean up
+        _IMPORT_DONE[key] = True
+        return True, HIFO_CSV, FIFO_LIFO_CSV
+    else:
+        raise RuntimeError(
+            f"Source file was modified after backup.\n"
+            f"Backup copy is safe at {_ORIGINAL_BACKUP}"
+        )
+
+
+# The “unreachable code” warning is coming from **PyCharm’s static analyzer / linter**, **not** Python itself.
+# It believes the `if` condition is always `False` under normal circumstances, so the `raise …`
+# and the lines after it **look** unreachable.
+# You can simply ignore the warning or add `# noinspection PyUnreachableCode` above the `if`,
+# if you prefer the warning to disappear.
+
+
+# ------------------------------------------------------------------
+# IRS F-8949 stub
+# ------------------------------------------------------------------
+def create_empty_f8949():
+    IRS_F8949_CSV.parent.mkdir(parents=True, exist_ok=True)
+    with IRS_F8949_CSV.open("w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "Description", "DateAcquired", "DateSold", "Proceeds", "CostBasis",
+            "GainLoss", "Adjustment"
+        ])
+
+# ------------------------------------------------------------------
+# Entry
+# ------------------------------------------------------------------
+def run():
+    try:
+        ok, hifo_path, fifo_path = import_transactions()
+        if ok:
+            print("Ready files:")
+            print("  FIFO/LIFO:", fifo_path)
+            print("  HIFO     :", hifo_path)
+    except Exception as e:
+        print("Error:", e)
+
+if __name__ == "__main__":
+    run()
+    # try:
+    #     ok, hifo_path, fifo_path = import_transactions()
+    #     if ok:
+    #         print("Ready files:")
+    #         print("  FIFO/LIFO:", fifo_path)
+    #         print("  HIFO     :", hifo_path)
+    # except Exception as e:
+    #     print("Error:", e)
+
+# running it with "__main__" allows the whole program to be run via terminal: "python3 importer.py"
+# running it with run() allows it to be called from another local program with "import file_prep; file_prep.run()"

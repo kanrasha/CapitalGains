@@ -1,0 +1,124 @@
+I. LIVE LINKS TO CURRENT TAX BRACKETS, CAPITAL GAINS RATES, AND INSTRUCTIONS
+1) 2024 Federal Tax Brackets & Rates
+IRS Publication 15-T:
+https://www.irs.gov/publications/p15t
+
+2) Short- vs Long-Term Capital Gains
+IRS Publication 550 (Investment Income & Expenses) – see Chapter 4:
+https://www.irs.gov/publications/p550
+
+3) Form 8949 / Schedule D Instructions (tells you exactly how to report gains & losses):
+https://www.irs.gov/forms-pubs/about-form-8949
+https://www.irs.gov/forms-pubs/about-schedule-d-form-1040
+
+4) 2024 Capital-Gains Rates (quick IRS table)
+https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments-for-tax-year-2024
+
+5) IRS Publication 550, “Investment Income and Expenses,” “Identifying the Shares Sold” section:
+https://www.irs.gov/publications/p550#en_US_2023_publink100010203
+
+All pages are updated annually when the new figures are released.
+
+
+II. FEES REQUIRED TO BE INLCUDED IN COST BASIS
+Internal Revenue Code §1012 (cost basis): “what you paid for the property, including commissions and other acquisition
+costs.”  IRS Publication 551 and Form 8949 instructions explicitly tell you to add commissions/fees to basis or subtract from
+proceeds.
+
+
+III. FIFO, LIFO, HIFO ACCOUNTING
+Always "First Out", so each sale is calculated chronologically no matter what; method determines which purchase to sell
+FIFO = First In First Out = selling earliest purchases first
+LIFO = Last In First Out = selling latest purchases first
+HIFO = Highest In First Out = selling highest cost basis purchases first (NOT highest price... this matters)
+Specific-ID (Spec-ID) = this is the actual 8949 implementation of LIFO or HIFO, but can be more specific
+Average Basis Method = Average Cost = This is only allowed for mutual fund shares, and not applicable here.
+
+With Specific Identification you may designate any lot(s) you already own—regardless of size, date, or cost basis
+and sell them in any order you choose.  You simply record the exact lot(s) (date, qty, cost basis) you are disposing of
+before or at settlement, and that becomes the basis for the sale.
+(See links #3 and #5 above)
+
+That’s it. Any other method (e.g., “average cost”, “R-CAM”, etc.) is not allowed and will revert to FIFO.
+
+
+
+
+
+******** A WHOLE BUNCH OF ADDITIONAL INFO TO SIFT THROUGH
+
+### More In Forms and Instructions
+
+Use Form 8949 to reconcile amounts that were reported to you and the IRS on Form 1099-B or 1099-S
+(or substitute statement) with the amounts you report on your return. The subtotals from this form will then be carried
+over to Schedule D (Form 1040), where gain or loss will be calculated in aggregate.
+
+* * *
+
+## Current revision
+
+[Form 8949 PDF](https://www.irs.gov/pub/irs-pdf/f8949.pdf "2024 Form 8949 (PDF)")
+
+[Instructions for Form 8949](https://www.irs.gov/instructions/i8949 "Instructions for Form 8949 (2024) ")
+( [Print version PDF](https://www.irs.gov/pub/irs-pdf/i8949.pdf "2024 Inst 8949 (PDF)"))
+
+* * *
+
+## Recent developments
+
+[Corrections to the 2020 instructions for Form 8949]
+(https://www.irs.gov/forms-pubs/corrections-to-the-2020-instructions-for-form-8949
+"Corrections to the 2020 Instructions for Form 8949  ") --12-MAY-2021
+
+* * *
+
+## Other items you may find useful
+
+[All Form 8949 revisions](https://www.irs.gov/prior-year-forms-and-instructions?find=8949&items_per_page=200)
+
+[About Publication 544, Sales and Other Dispositions of Assets](https://www.irs.gov/forms-pubs/about-publication-544
+"About Publication 544, Sales and Other Dispositions of Assets")
+
+[About Publication 550, Investment Income and Expenses](https://www.irs.gov/forms-pubs/about-publication-550
+"About Publication 550, Investment Income and Expenses")
+
+[About Publication 551, Basis of Assets](https://www.irs.gov/forms-pubs/about-publication-551 "About Publication 551,
+Basis of Assets")
+
+[Opportunity zones](https://www.irs.gov/credits-deductions/businesses/opportunity-zones "Opportunity zones")
+
+[Other current products](https://www.irs.gov/forms-instructions-and-publications "Forms, instructions and publications")
+
+### Related items
+
+[About Form 990-T, Exempt Organization Business Income Tax Return (and proxy tax under section 6033(e))]
+(https://www.irs.gov/forms-pubs/about-form-990-t)
+
+[About Form 1099-B, Proceeds from Broker and Barter Exchange Transactions]
+(https://www.irs.gov/forms-pubs/about-form-1099-b)
+
+[About Form 1099-S, Proceeds from Real Estate Transactions](https://www.irs.gov/forms-pubs/about-form-1099-s)
+
+[About Form 2439, Notice to Shareholder of Undistributed Long-Term Capital Gains]
+(https://www.irs.gov/forms-pubs/about-form-2439)
+
+[About Form 4684, Casualties and Thefts](https://www.irs.gov/forms-pubs/about-form-4684)
+
+[About Form 4797, Sales of Business Property](https://www.irs.gov/forms-pubs/about-form-4797)
+
+[About Form 6252, Installment Sale Income](https://www.irs.gov/forms-pubs/about-form-6252)
+
+[About Form 6781, Gains and Losses From Section 1256 Contracts and Straddles]
+(https://www.irs.gov/forms-pubs/about-form-6781)
+
+[About Form 8824, Like-Kind Exchanges](https://www.irs.gov/forms-pubs/about-form-8824)
+
+[About Schedule D (Form 1040), Capital Gains and Losses](https://www.irs.gov/forms-pubs/about-schedule-d-form-1040)
+
+[About Schedule D (Form 1041), Capital Gains and Losses](https://www.irs.gov/forms-pubs/about-schedule-d-form-1041)
+
+[About Form 1065, U.S. Return of Partnership Income](https://www.irs.gov/forms-pubs/about-form-1065)
+
+[About Schedule D (Form 1120), Capital Gains and Losses](https://www.irs.gov/forms-pubs/about-schedule-d-form-1120)
+
+Page Last Reviewed or Updated: 23-Jan-2025
