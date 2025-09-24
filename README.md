@@ -3,7 +3,7 @@ Designed to work offline and with client side data custody.  Open source project
 
 ## What It Does
 A single `.csv` → clean gain/loss tables (short & long) and remaining inventory.
-To run the program, just run the GUI script.
+To run the program, just run the GUI script.  There is an example CSV in place for demonstration.
 
 ## Input File Format
 **`transactions.csv`:** Date, Action, Quantity, PricePerUnit, Notes (optional), Fee* (optional) <br>
