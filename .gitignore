@@ -8,3 +8,8 @@ working_files/archived/.DS_Store
 developer_archive/
 __pycache__/
 capital_gains.csv/
+
+exports/capital_gains_fifo.csv
+exports/capital_gains_lifo.csv
+exports/capital_gains_hifo.csv
+working_files/transactions_formatted.csv

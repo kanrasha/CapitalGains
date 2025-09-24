@@ -26,7 +26,7 @@ IMPORT_CSV      = ROOT/config['IMPORT_CSV']
 EXPORT_DIR      = ROOT/config['EXPORT_DIR']
 ARCHIVE_DIR     = ROOT/config['ARCHIVE_DIR']
 MAIN_CSV        = ROOT/config['MAIN_CSV']
-EXPORT_CSV      = ROOT/config['EXPORT_CSV']
+# EXPORT_CSV      = ROOT/config['EXPORT_CSV']
 
 ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
 EXPORT_DIR.mkdir(parents=True, exist_ok=True)

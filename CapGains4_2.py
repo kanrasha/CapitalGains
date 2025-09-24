@@ -43,11 +43,12 @@ with open('paths.yaml', 'r') as f:
 ROOT            = Path(__file__).parent
 ARCHIVE_DIR     = ROOT/config['ARCHIVE_DIR']
 MAIN_CSV        = ROOT/config['MAIN_CSV']
-EXPORT_CSV      = ROOT/config['EXPORT_CSV']
+# EXPORT_CSV      = ROOT/config['EXPORT_CSV']
+EXPORT_DIR      = ROOT/config['EXPORT_DIR']
 
 def capgains(method: str):
-    EXPORT_CSV = ROOT / config['EXPORT_CSV'] / f"capital_gains_{method}.csv"
-    EXPORT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    EXPORT_CSV = ROOT / config['EXPORT_DIR'] / f"capital_gains_{method}.csv"
+    EXPORT_DIR.parent.mkdir(parents=True, exist_ok=True)
 
     buys = []
     sells = []
@@ -141,7 +142,7 @@ def checksum():
 
     for tag in method_tag:
         try:
-            EXPORT_CSV = ROOT / "exports" / f"capital_gains_{tag.upper()}.csv"
+            EXPORT_CSV = ROOT / config["EXPORT_DIR"] / f"capital_gains_{tag.upper()}.csv"
 
             with EXPORT_CSV.open(newline="", encoding="utf-8") as f:
                 export_rows = list(csv.DictReader(f))
@@ -190,7 +191,7 @@ def checksum():
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--method", choices=["fifo", "lifo", "hifo"], default="fifo")
+    parser.add_argument("--method", choices=["fifo", "lifo", "hifo"], default="hifo")
     args = parser.parse_args()
     capgains(args.method); print(f'FUTURE: Remaining: ______ print out one time here instead of per method')
     checksum()
