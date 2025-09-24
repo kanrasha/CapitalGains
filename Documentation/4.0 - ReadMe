@@ -5,8 +5,10 @@ catch in this version - it only works for one asset at a time (for now).  It als
 with the addition of an alias to the program directory or by running Terminal within the program directory.  Then
 simply type:
 
+RUN FROM COMMAND LINE
+$ cd /your/drive/capitalgains
 $ CapGains4_2.py --method ["fifo", "lifo", "hifo"]
-# defaults to fifo if no method is named, use appropriate version number
+# defaults to fifo if no method is named
 
 The calculation will return in the Terminal and the exported capital gains file will be in /exports.
 
@@ -18,49 +20,56 @@ user must keep their own records.  Lots of official links and information is pro
 READ directory.
 
 As of now, the HIFO and LIFO methods only provide calculations, but do not provide the required specific ID
-(date, qty, cost) for each sale as is required on the IRS form 8949 when using these methods.  On Form 8949 you mark
-Box 3 “Specific identification” (not “LIFO” or “HIFO”).
+(date, qty, cost) for each sale as is required on the IRS form 8949 when using these methods.  If using Specific ID, 
+on Form 8949 you mark Box 3 “Specific identification” (not “LIFO” or “HIFO”).
 
-Something I need to check on: does HIFO calculate strictly by highest cost basis, or can it be by highest "price"?
-Because a larger sale at a lower price might result in higher taxes when the goal is to sell the most expensive
-purchases first.
+Something to note: HIFO calculates strictly by highest cost basis, NOT highest "price" - goes by purchase, not sale.
 
-Many more updates to come.  Enjoy the use of this as a trading and tax estimation tool.
+More updates to come.  Enjoy the use of this as a trading and tax estimation tool.  When it's in a better place, this 
+repo will be moved to a new, dedicated account for open source money management tools.
 
 
 1. DESIGN GOALS
 
-Implement specific ID for HIFO and LIFO
+Package dependencies installation guide or included in repo / script to install
+Currently only tested for Mac, but should work wherever Python works
+Compile design goals from script docstrings
+Get working for multiple assets in one CSV
+Get working for multiple CSVs in import folder
+Work around specific-name import file (anything in folder will be imported)
+Implement specific ID, for fully custom accounting and for HIFO/LIFO exports
 Never overwrite /imports/transactions.csv
 Original import gets copied to /working_files before the other processes run, then verified against before deleting.
 Always work on copies in /working_files/…
 Add CostBasis (Price * Qty) and make new file
 Auto-detect date format and sort ascending (fast)
-Export two ready-to-use copies:
-• transactions_hifo.csv (same order)
-• transactions_fifo_lifo.csv (date-ordered)
-Optional quarantine + SHA-256 verification
+Optional quarantine of import file + SHA-256 verification
 Bypass if an import has already succeeded on the same file
 Prompt user when a duplicate basename exists
-Work with optional Notes column (ignored but preserved)
 Prompt user if import file is missing
+Build as DMG, DEB, EXE installation packages
 
 
-2. FILE / FOLDER CONSTANTS
+2. DEFAULT FILE / FOLDER CONSTANTS (paths.yaml)
 
-from pathlib import Path
-
-ROOT            = Path(__file__).parent
-IMPORT_DIR      = ROOT / "imports"
-WORKING_DIR     = ROOT / "working_files"
-ARCHIVE_DIR     = WORKING_DIR / "archived"
-TRANSACTION_CSV = IMPORT_DIR / "transactions.csv"
-
-# Output files
-HIFO_CSV        = WORKING_DIR / "transactions_hifo.csv"
-FIFO_LIFO_CSV   = WORKING_DIR / "transactions_fifo_lifo.csv"
+WORKING_DIR: "working_files"
+IMPORT_CSV: "imports/transactions.csv"
+EXPORT_DIR: "exports"
+ARCHIVE_DIR: "working_files/archived"
+MAIN_CSV: "working_files/transactions_formatted.csv"
+EXPORT_CSV: "exports/capital_gains.csv"
+# export CSV name gets tagged per method within script, this is just a fallback
 
 
+
+
+
+
+
+
+******************************************************************
+THE FOLLOWING IS FOR PERSONAL/DEVELOPER USE AND REFERENCE
+******************************************************************
 
 3. FAST DATE PARSING MACRO
 
@@ -207,28 +216,7 @@ if __name__ == "__main__":
         print(f"Ready to consume:\n  HIFO: {hifo_path}\n  FIFO/LIFO: {fifo_path}")
 
 
-
-9. FULL CODE BELOW
-First working copy for safety reference.  This is pre-4.0, which will be the LAST working copy before 4.0.1
-
-import csv, hashlib, shutil
-from datetime import datetime
-from pathlib import Path
-import re
-import os
-
-# ------------------------------------------------------------------
-# Paths
-# ------------------------------------------------------------------
-ROOT                = Path(__file__).parent
-IMPORT_DIR          = ROOT / "imports"
-WORKING_DIR         = ROOT / "working_files"
-ARCHIVE_DIR         = WORKING_DIR / "archived"
-TRANSACTION_CSV     = IMPORT_DIR / "transactions.csv"
-
-HIFO_CSV            = WORKING_DIR / "transactions_hifo.csv"
-FIFO_LIFO_CSV       = WORKING_DIR / "transactions_fifo_lifo.csv"
-IRS_F8949_CSV       = ROOT / "exports" / "IRS_f8949.csv"
+9. MORE CODE SNIPPET REFERENCES
 
 # ------------------------------------------------------------------
 # CONSTANTS
@@ -274,41 +262,9 @@ def verify_files(src: Path, dst: Path) -> bool:
         return h.hexdigest()
     return sha256(src) == sha256(dst)
 
-# # Version 2, works with block on line 168-173
-# def file_hash(p: Path) -> str:
-#     h = hashlib.sha256()
-#     with p.open("rb") as f:
-#         for chunk in iter(lambda: f.read(8192), b""):
-#             h.update(chunk)
-#     return h.hexdigest()
-
 # Version 3, verification without SHA256
 def is_modified_since(src: Path, backup: Path) -> bool:
     return os.path.getmtime(src) != os.path.getmtime(backup)
-
-# ------------------------------------------------------------------
-# Main importer
-# ------------------------------------------------------------------
-def import_transactions():
-
-    if not TRANSACTION_CSV.exists():
-        raise SystemExit(
-            f"Missing required file: {TRANSACTION_CSV}\n"
-            f"Please place 'transactions.csv' in {IMPORT_DIR.absolute()}"
-        )
-
-    global _ORIGINAL_BACKUP
-    src = TRANSACTION_CSV.resolve()
-    key = str(src)
-
-    # bypass if already done
-    if _IMPORT_DONE.get(key, False):
-        print("✅ Import already completed – skipping.")
-        return True, HIFO_CSV, FIFO_LIFO_CSV
-
-    if not src.exists():
-        raise FileNotFoundError(f"{src} not found")
-    # this got added later... could remove?
 
     # prompt for duplicate basename
     basename = src.name
@@ -337,42 +293,6 @@ def import_transactions():
     # return True lets downstream code continue without a special-case branch;
     # callers just check the boolean and use the returned paths.
     # If you prefer, you can raise an exception instead.
-
-    # ---------- Add CostBasis (missing column) ----------
-    for row in rows:
-        row.setdefault("CostBasis", float(row["PricePerUnit"]) * float(row["Qty"]))
-        # If "CostBasis" is missing (or None), add it with value; otherwise leave the existing value
-        row.setdefault("Notes", "")
-        # Same for "Notes"
-
-        # Necessary only if the CSV may lack those columns.
-        # If you guarantee the columns exist, you can remove these two lines.
-
-    # Sort - Create two views and write
-    fields = ["Date", "Action", "Qty", "PricePerUnit", "CostBasis", "Notes"]
-    date_sorted = sorted(rows, key=lambda r: safe_date(r["Date"]))
-    cost_sorted = sorted(rows, key=lambda r: float(r["CostBasis"]), reverse=True)
-
-    WORKING_DIR.mkdir(parents=True, exist_ok=True)
-
-    # This is old, replaced by the block that follows this one.
-    # with HIFO_CSV.open("w", newline="", encoding="utf-8") as h, \
-    #      FIFO_LIFO_CSV.open("w", newline="", encoding="utf-8") as f:
-    #     for path, writer in [(HIFO_CSV, csv.DictWriter(h, fields)),
-    #                          (FIFO_LIFO_CSV, csv.DictWriter(f, fields))]:
-    #         writer.writeheader()
-    #         writer.writerows(rows)
-
-    # The next 2 lines are the replacement for the above block.
-    with FIFO_LIFO_CSV.open("w", newline="", encoding="utf-8") as f1:
-        writer = csv.DictWriter(f1, fields)
-        writer.writeheader()
-        writer.writerows(date_sorted)
-
-    with HIFO_CSV.open("w", newline="", encoding="utf-8") as f2:
-        writer = csv.DictWriter(f2, fields)
-        writer.writeheader()
-        writer.writerows(cost_sorted)
 
     # ---------- Verify ----------
     if verify_files(src, _ORIGINAL_BACKUP):
@@ -431,30 +351,6 @@ def create_empty_f8949():
             "Description", "DateAcquired", "DateSold", "Proceeds", "CostBasis",
             "GainLoss", "Adjustment"
         ])
-
-# ------------------------------------------------------------------
-# Entry
-# ------------------------------------------------------------------
-def run():
-    try:
-        ok, hifo_path, fifo_path = import_transactions()
-        if ok:
-            print("Ready files:")
-            print("  FIFO/LIFO:", fifo_path)
-            print("  HIFO     :", hifo_path)
-    except Exception as e:
-        print("Error:", e)
-
-if __name__ == "__main__":
-    run()
-    # try:
-    #     ok, hifo_path, fifo_path = import_transactions()
-    #     if ok:
-    #         print("Ready files:")
-    #         print("  FIFO/LIFO:", fifo_path)
-    #         print("  HIFO     :", hifo_path)
-    # except Exception as e:
-    #     print("Error:", e)
 
 # running it with "__main__" allows the whole program to be run via terminal: "python3 importer.py"
 # running it with run() allows it to be called from another local program with "import file_prep; file_prep.run()"
