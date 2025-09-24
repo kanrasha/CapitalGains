@@ -5,7 +5,8 @@ catch in this version - it only works for one asset at a time (for now).  It als
 with the addition of an alias to the program directory or by running Terminal within the program directory.  Then
 simply type:
 
-$ CapGains4_0 --method ["fifo", "lifo", "hifo"]  # defaults to fifo if no method is named
+$ CapGains4_2.py --method ["fifo", "lifo", "hifo"]
+# defaults to fifo if no method is named, use appropriate version number
 
 The calculation will return in the Terminal and the exported capital gains file will be in /exports.
 

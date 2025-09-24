@@ -1,23 +1,28 @@
 # 🟪 Capital Gains Calculator
-Designed to work offline and with client side data custody.  Open source project.
+US-based open source project designed to work offline with client side data custody and customization.  
+Built in Python.
 
 ## What It Does
-A single `.csv` → clean gain/loss tables (short & long) and remaining inventory.
-To run the program, just run the GUI script.  There is an example CSV in place for demonstration.
-
-## Input File Format
-**`transactions.csv`:** Date, Action, Quantity, PricePerUnit, Notes (optional), Fee* (optional) <br>
-*Fee column is optional as far as the script is concerned, but it is required if the price does not account for the fee*
-- Source file:   imports/transactions.csv
-- Clean copy:    working_files/transactions_formatted.csv
-- Export:        exports/capital_gains.csv
-- IRS Exports:    *this has not been made yet, but they will be formatted properly for IRS Form 8949 and Schedule D*
+Single `.csv` import → clean gain/loss tables (short & long) for multiple accounting methods.
+To run the program, see Quick Start below.
 
 ## Quick Start
-- Download the zip
-- 1: Put your CSV into imports/
-- 2: Run python capgains.py (or the GUI) <br><br>
-- If running the individual scripts, user must customize the paths at the top so that **`capgains[version#].py`** can locate the **`file_prep[version#].py`** script, and again for `file_prep` so that it can locate the import csv.
+- Command line download: $ git clone https://github.com/kanrasha/capitalgains
+- 1: Put your CSV into the imports file using the headers format below (see /imports/transactions_demo.csv)
+- 2: Run `CapGains[version].py`, the GUI or using the command line (see Documentation) <br><br>
+- If running the individual scripts, user must customize the paths.yaml
+
+## Input File Format
+**DEFAULT IMPORT FORMAT:** `transactions.csv` <br>
+**HEADERS:** Date, Action, Quantity, PricePerUnit, Notes (optional), Fee* (optional) <br>
+*Notes and Fee column are optional as far as the script is concerned, but Fee is required if the price does not account for it*
+- Source file:   /imports/transactions.csv
+- Clean copy:    /working_files/transactions_formatted.csv
+- Export:        /exports/capital_gains_[method].csv
+- IRS Exports:   this has not been made yet, but they will be formatted properly for:
+  - IRS Form 8949
+  - 1099-B
+  - Schedule D*
 
 ## Accounting Methods (toggle in settings)
 
