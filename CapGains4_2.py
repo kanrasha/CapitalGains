@@ -31,11 +31,11 @@ COMPLETED:
 """
 
 import file_prep0_3; file_prep0_3.run()
-import csv
+
+import csv, yaml
 from datetime import datetime
 from pathlib import Path
 from decimal import Decimal
-import yaml
 
 with open('paths.yaml', 'r') as f:
     config = yaml.safe_load(f)

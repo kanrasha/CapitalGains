@@ -11,11 +11,10 @@ TO DO
 reminder: the function of file_prep is to make any file compatible by formatting it to the program's liking"""
 
 
-import csv, shutil, re
+import csv, shutil, re, yaml
 from datetime import datetime
 from pathlib import Path
 from decimal import Decimal
-import yaml
 
 with open('paths.yaml', 'r') as f:
     config = yaml.safe_load(f)

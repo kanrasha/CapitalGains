@@ -10,11 +10,12 @@ TO DO:
 - the GUI prints 'Imports Formatted' twice, so something is inefficient here, but works fine
 """
 
-import tkinter as tk
 import file_prep0_3; file_prep0_3.run()
+from CapGains4_2 import capgains, checksum
+
+import tkinter as tk
 from tkinter import messagebox
 from pathlib import Path
-from CapGains4_2 import capgains, checksum
 import io, sys
 
 ROOT = Path(__file__).parent
