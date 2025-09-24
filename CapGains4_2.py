@@ -191,7 +191,7 @@ def checksum():
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--method", choices=["fifo", "lifo", "hifo"], default="hifo")
+    parser.add_argument("--method", choices=["fifo", "lifo", "hifo"], default="fifo")
     args = parser.parse_args()
     capgains(args.method); print(f'FUTURE: Remaining: ______ print out one time here instead of per method')
     checksum()

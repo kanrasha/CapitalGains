@@ -10,13 +10,7 @@ $ cd /your/drive/capitalgains
 $ CapGains4_2.py --method ["fifo", "lifo", "hifo"]
 # defaults to fifo if no method is named
 
-DEPENDENCIES (Need to install manually or run script to batch install):
-import io, sys, csv, yaml, shutil, re
-import tkinter as tk
-from tkinter import messagebox
-from pathlib import Path
-from datetime import datetime
-from decimal import Decimal
+DEPENDENCIES: see "requirements.txt"
 
 The calculation will return in the Terminal and the exported capital gains file will be in /exports.
 
@@ -56,6 +50,8 @@ Bypass if an import has already succeeded on the same file
 Prompt user when a duplicate basename exists
 Prompt user if import file is missing
 Build as DMG, DEB, EXE installation packages
+Include options for siloed python installation so that the user does not have to alter their own python setup
+Install project to pip for universal quick downloading - not sure if/how possible this is.
 
 
 2. DEFAULT FILE / FOLDER CONSTANTS (paths.yaml)
